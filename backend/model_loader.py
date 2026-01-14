@@ -1,25 +1,27 @@
 """
 Backend module for loading the emotion detection model and making predictions.
+Loads the model from Hugging Face Hub.
 """
+
 import torch
-from transformers import DistilBertForSequenceClassification, DistilBertTokenizer
-import os
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
 class EmotionDetector:
     """Class to handle emotion detection model loading and predictions."""
-    
-    def __init__(self, model_path="final_emotion_model"):
+
+    def __init__(self, model_name="Kishorets/emotions-detector-distilbert"):
         """
-        Initialize the emotion detector with the model path.
-        
+        Initialize the emotion detector with the Hugging Face model name.
+
         Args:
-            model_path (str): Path to the trained model directory
+            model_name (str): Hugging Face model repository ID
         """
-        self.model_path = model_path
+        self.model_name = model_name
         self.model = None
         self.tokenizer = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.id2label = {
             0: "sadness",
             1: "joy",
@@ -28,68 +30,69 @@ class EmotionDetector:
             4: "fear",
             5: "surprise"
         }
-        
+
     def load_model(self):
-        """Load the pre-trained model and tokenizer."""
+        """Load the model and tokenizer from Hugging Face Hub."""
         try:
-            print(f"Loading model from {self.model_path}...")
-            self.tokenizer = DistilBertTokenizer.from_pretrained(self.model_path)
-            self.model = DistilBertForSequenceClassification.from_pretrained(self.model_path)
+            print(f"Loading model from Hugging Face: {self.model_name}")
+
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+
             self.model.to(self.device)
             self.model.eval()
-            print("Model loaded successfully!")
+
+            print("Model loaded successfully.")
             return True
+
         except Exception as e:
-            print(f"Error loading model: {str(e)}")
+            print(f"Error loading model: {e}")
             return False
-    
-    def predict(self, text):
+
+    def predict(self, text: str):
         """
-        Predict the emotion from the input text.
-        
+        Predict the emotion from input text.
+
         Args:
-            text (str): Input sentence to analyze
-            
+            text (str): Input sentence
+
         Returns:
-            dict: Dictionary containing predicted emotion and confidence scores
+            dict: Prediction result with confidence scores
         """
         if self.model is None or self.tokenizer is None:
-            raise ValueError("Model not loaded. Please call load_model() first.")
-        
-        # Tokenize the input text
+            raise RuntimeError("Model not loaded. Call load_model() first.")
+
         inputs = self.tokenizer(
             text,
             truncation=True,
             padding=True,
-            max_length=512,
+            max_length=128,
             return_tensors="pt"
         )
-        
-        # Move inputs to the same device as the model
+
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
-        
-        # Make prediction
+
         with torch.no_grad():
             outputs = self.model(**inputs)
             logits = outputs.logits
-            probabilities = torch.nn.functional.softmax(logits, dim=-1)
-        
-        # Get the predicted class and confidence
-        predicted_id = torch.argmax(probabilities, dim=-1).item()
-        confidence = probabilities[0][predicted_id].item()
-        
-        # Get all emotion scores
-        emotion_scores = {}
-        for emotion_id, emotion_name in self.id2label.items():
-            emotion_scores[emotion_name] = probabilities[0][emotion_id].item()
-        
-        # Sort emotions by confidence
-        sorted_emotions = sorted(emotion_scores.items(), key=lambda x: x[1], reverse=True)
-        
+            probabilities = torch.softmax(logits, dim=-1)[0]
+
+        predicted_id = torch.argmax(probabilities).item()
+
+        emotion_scores = {
+            self.id2label[i]: probabilities[i].item()
+            for i in range(len(probabilities))
+        }
+
+        sorted_emotions = sorted(
+            emotion_scores.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+
         return {
             "predicted_emotion": self.id2label[predicted_id],
-            "confidence": confidence,
+            "confidence": probabilities[predicted_id].item(),
             "all_emotions": emotion_scores,
             "sorted_emotions": sorted_emotions
         }
-
