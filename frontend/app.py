@@ -62,7 +62,8 @@ if 'detector' not in st.session_state:
     # Get the project root directory (parent of frontend)
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model_path = os.path.join(project_root, "final_emotion_model")
-    st.session_state.detector = EmotionDetector(model_path=model_path)
+    st.session_state.detector = EmotionDetector()
+
     with st.spinner("Loading emotion detection model... This may take a moment."):
         success = st.session_state.detector.load_model()
         if not success:
