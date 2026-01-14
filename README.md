@@ -2,6 +2,10 @@
 
 A web application built with Streamlit that detects emotions in text using a fine-tuned DistilBERT model. Simply enter a sentence and discover which emotion it describes!
 
+## 🌐 Live Demo
+
+**Try it now!** 👉 [https://emotions-detector.streamlit.app/](https://emotions-detector.streamlit.app/)
+
 ## 🎯 Features
 
 - **Real-time Emotion Detection**: Analyze emotions in text instantly
@@ -12,7 +16,7 @@ A web application built with Streamlit that detects emotions in text using a fin
   - 😠 Anger
   - 😨 Fear
   - 😲 Surprise
-- **Confidence Scores**: View confidence levels for all emotions
+- **Confidence Scores**: View confidence level for the predicted emotion
 - **Beautiful UI**: Modern and intuitive user interface
 
 ## 📁 Project Structure
@@ -79,8 +83,7 @@ emotions-detector/
 
 1. Enter a sentence in the text area
 2. Click the "🔍 Detect Emotion" button
-3. View the predicted emotion and confidence scores
-4. See detailed scores for all emotion categories
+3. View the predicted emotion and confidence score
 
 ### Example Sentences
 
